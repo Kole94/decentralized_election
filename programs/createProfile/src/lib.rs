@@ -22,6 +22,8 @@ pub mod create_profile {
     pub fn create_voter(ctx: Context<CreateVoter>) -> Result<()> {
         let voter: &mut Account<VoterData> = &mut ctx.accounts.voter_data;
         voter.voter = ctx.accounts.signer.key();
+        let election = &mut ctx.accounts.election_data;
+        election.apporved += 1;
         voter.supported = false;
         voter.voted= false;
         Ok(())
@@ -36,15 +38,28 @@ pub mod create_profile {
             candidate.support += 1;
             voter.supported = true;
         };
+        if candidate.support > 10{
+            candidate.electable = true;
+        }
         Ok(())
     }
     pub fn vote(ctx: Context<Vote>) -> Result<()> {
         let voter: &mut Account<VoterData> = &mut ctx.accounts.voter_data;
         let candidate: &mut Account<CandidateData> = &mut ctx.accounts.candidate_data;
-        if !voter.voted {
-            candidate.votes += 1;
-            voter.voted = true;
-        };
+        if election.is_happening {
+            if candidate.electable {
+                if !voter.voted {
+                    candidate.votes += 1;
+                    voter.voted = true;
+                }else{
+                    //votererror
+                }
+            }else{
+                // candidate error 
+            }    
+        }else{
+            // election error
+        }
         Ok(())
     }
 }
@@ -54,7 +69,7 @@ pub struct CreateElection<'info> {
     #[account(
         init,
         payer=signer,
-        space= 32 + 2 + 16,
+        space= 32 + 2 + 16 + 8,
         seeds=[
             b"election",
             signer.key().as_ref(),
@@ -72,7 +87,7 @@ pub struct CreateCandiadte<'info> {
     #[account(
         init,
         payer=signer,
-        space= 32 + 8 + 16,
+        space= 32 + 8 + 2 + 16,
         seeds=[
             b"candidate",
             signer.key().as_ref(),
@@ -98,6 +113,8 @@ pub struct CreateVoter<'info> {
         space= 32 + 8 + 2
     )]
     pub voter_data: Account<'info,VoterData>,
+    #[account(mut)]
+    pub election_data: Account<'info,ElectionData>,
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info,System>
@@ -130,11 +147,13 @@ pub struct ElectionData {
     pub creator: Pubkey,
     pub is_happening: bool,
     pub date: u16,
+    pub apporved: u8,
 }
 
 #[account]
 pub struct CandidateData {
     pub candidate: Pubkey,
+    pub electable: bool,
     pub support: u8,
     pub votes: u16,
 }
