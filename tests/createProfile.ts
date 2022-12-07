@@ -40,55 +40,81 @@ describe("createProfile", () => {
     await provider.connection.confirmTransaction(airdrop_tx);
   }
 
-  const { user, program, provider } = getProgramInteraction();
+  const { user: admin, program, provider } = getProgramInteraction();
   const {
-    user: user2,
+    user: candidate,
     program: program2,
     provider: provider2,
   } = getProgramInteraction();
   const {
-    user: user3,
+    user: voter1,
     program: program3,
     provider: provider3,
   } = getProgramInteraction();
   const {
-    user: user4,
+    user: candidate2,
     program: program4,
     provider: provider4,
   } = getProgramInteraction();
 
   const {
-    user: user5,
+    user: voter2,
     program: program5,
     provider: provider5,
   } = getProgramInteraction();
+
+  const {
+    user: admin2,
+    program: program6,
+    provider: provider6,
+  } = getProgramInteraction();
+
+  const {
+    user: user7,
+    program: program7,
+    provider: provider7,
+  } = getProgramInteraction();
+
   it("Is initialized!", async () => {
-    await addFunds(user, LAMPORTS_PER_SOL, provider);
-    await addFunds(user2, LAMPORTS_PER_SOL, provider2);
-    await addFunds(user3, LAMPORTS_PER_SOL, provider3);
-    await addFunds(user4, LAMPORTS_PER_SOL, provider4);
-    await addFunds(user5, LAMPORTS_PER_SOL, provider5);
+    await addFunds(admin, LAMPORTS_PER_SOL, provider);
+    await addFunds(candidate, LAMPORTS_PER_SOL, provider2);
+    await addFunds(voter1, LAMPORTS_PER_SOL, provider3);
+    await addFunds(candidate2, LAMPORTS_PER_SOL, provider4);
+    await addFunds(voter2, LAMPORTS_PER_SOL, provider5);
+    await addFunds(admin2, LAMPORTS_PER_SOL, provider6);
+    await addFunds(user7, LAMPORTS_PER_SOL, provider7);
+
     const [electionPDA, _a] = await PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode("election"), user.publicKey.toBytes()],
+      [anchor.utils.bytes.utf8.encode("election"), admin.publicKey.toBytes()],
       program.programId
+    );
+    const [electionPDA2, _a2] = await PublicKey.findProgramAddress(
+      [anchor.utils.bytes.utf8.encode("election"), admin2.publicKey.toBytes()],
+      program6.programId
     );
 
     const [candidateIdentityPDA, _] = await PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode("candidate"), user2.publicKey.toBytes()],
+      [
+        anchor.utils.bytes.utf8.encode("candidate"),
+        candidate.publicKey.toBytes(),
+      ],
       program2.programId
     );
 
     const [voterPDA, _v] = await PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode("voter"), user3.publicKey.toBytes()],
+      [anchor.utils.bytes.utf8.encode("voter"), voter1.publicKey.toBytes()],
       program3.programId
     );
     const [candidateIdentityPDAa, _ab] = await PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode("candidate"), user4.publicKey.toBytes()],
+      [
+        anchor.utils.bytes.utf8.encode("candidate"),
+        candidate2.publicKey.toBytes(),
+      ],
       program4.programId
     );
 
     const [voterPDAa, _va] = await PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode("voter"), user5.publicKey.toBytes()],
+      [anchor.utils.bytes.utf8.encode("voter"), voter2.publicKey.toBytes()],
       program5.programId
     );
 
@@ -97,7 +123,15 @@ describe("createProfile", () => {
       .accounts({
         electionData: electionPDA,
       })
-      .signers([user])
+      .signers([admin])
+      .rpc();
+
+    await program6.methods
+      .createElection()
+      .accounts({
+        electionData: electionPDA2,
+      })
+      .signers([admin2])
       .rpc();
 
     await program2.methods
@@ -105,15 +139,16 @@ describe("createProfile", () => {
       .accounts({
         candidateData: candidateIdentityPDA,
       })
-      .signers([user2])
+      .signers([candidate])
       .rpc();
 
     await program3.methods
       .createVoter()
       .accounts({
         voterData: voterPDA,
+        electionData: electionPDA,
       })
-      .signers([user3])
+      .signers([voter1])
       .rpc();
 
     await program3.methods
@@ -123,7 +158,7 @@ describe("createProfile", () => {
         electionData: electionPDA,
         candidateData: candidateIdentityPDA,
       })
-      .signers([user3])
+      .signers([voter1])
       .rpc();
 
     await program3.methods
@@ -132,7 +167,7 @@ describe("createProfile", () => {
         voterData: voterPDA,
         candidateData: candidateIdentityPDA,
       })
-      .signers([user3])
+      .signers([voter1])
       .rpc();
 
     await program4.methods
@@ -140,15 +175,16 @@ describe("createProfile", () => {
       .accounts({
         candidateData: candidateIdentityPDAa,
       })
-      .signers([user4])
+      .signers([candidate2])
       .rpc();
 
     await program5.methods
       .createVoter()
       .accounts({
         voterData: voterPDAa,
+        electionData: electionPDA,
       })
-      .signers([user5])
+      .signers([voter2])
       .rpc();
 
     await program5.methods
@@ -158,7 +194,7 @@ describe("createProfile", () => {
         electionData: electionPDA,
         candidateData: candidateIdentityPDAa,
       })
-      .signers([user5])
+      .signers([voter2])
       .rpc();
 
     await program5.methods
@@ -167,13 +203,14 @@ describe("createProfile", () => {
         voterData: voterPDAa,
         candidateData: candidateIdentityPDAa,
       })
-      .signers([user5])
+      .signers([voter2])
       .rpc();
 
     const st = await program2.account.candidateData.all();
     const el = await program.account.electionData.fetch(electionPDA);
+    const el2 = await program.account.electionData.fetch(electionPDA2);
     const vo = await program3.account.voterData.all();
-    console.log(st, el, vo);
+    console.log(el, el2);
   });
 
   it("initializes the election account", async () => {});
