@@ -155,7 +155,6 @@ describe("createProfile", () => {
       .supportCandidate()
       .accounts({
         voterData: voterPDA,
-        electionData: electionPDA,
         candidateData: candidateIdentityPDA,
       })
       .signers([voter1])
@@ -166,6 +165,7 @@ describe("createProfile", () => {
       .accounts({
         voterData: voterPDA,
         candidateData: candidateIdentityPDA,
+        electionData: electionPDA,
       })
       .signers([voter1])
       .rpc();
@@ -191,7 +191,6 @@ describe("createProfile", () => {
       .supportCandidate()
       .accounts({
         voterData: voterPDAa,
-        electionData: electionPDA,
         candidateData: candidateIdentityPDAa,
       })
       .signers([voter2])
@@ -202,6 +201,7 @@ describe("createProfile", () => {
       .accounts({
         voterData: voterPDAa,
         candidateData: candidateIdentityPDAa,
+        electionData: electionPDA,
       })
       .signers([voter2])
       .rpc();

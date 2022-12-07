@@ -31,9 +31,7 @@ pub mod create_profile {
 
     pub fn support_candidate(ctx: Context<SupportCandidate>) -> Result<()> {
         let voter = &mut ctx.accounts.voter_data;
-        let election = &mut ctx.accounts.election_data;
         let candidate = &mut ctx.accounts.candidate_data;
-        election.is_happening = true;
         if !voter.supported {
             candidate.support += 1;
             voter.supported = true;
@@ -43,9 +41,12 @@ pub mod create_profile {
         }
         Ok(())
     }
+    
     pub fn vote(ctx: Context<Vote>) -> Result<()> {
         let voter: &mut Account<VoterData> = &mut ctx.accounts.voter_data;
-        let candidate: &mut Account<CandidateData> = &mut ctx.accounts.candidate_data;
+        let candidate: &mut Account<CandidateData> = &mut ctx.accounts.candidate_data;        
+        let election: &mut Account<ElectionData> = &mut ctx.accounts.election_data;
+
         if election.is_happening {
             if candidate.electable {
                 if !voter.voted {
@@ -127,8 +128,6 @@ pub struct SupportCandidate<'info> {
     #[account(mut)]
     pub candidate_data: Account<'info,CandidateData>,
     #[account(mut)]
-    pub election_data: Account<'info,ElectionData>,
-    #[account(mut)]
     pub signer: Signer<'info>,
 }
 
@@ -138,6 +137,8 @@ pub struct Vote<'info> {
     pub candidate_data: Account<'info,CandidateData>,
     #[account(mut)]
     pub voter_data: Account<'info,VoterData>,
+    #[account(mut)]
+    pub election_data: Account<'info,ElectionData>,
     #[account(mut)]
     pub signer: Signer<'info>,
 }
