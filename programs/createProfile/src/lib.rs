@@ -24,6 +24,9 @@ pub mod create_profile {
         voter.voter = ctx.accounts.signer.key();
         let election = &mut ctx.accounts.election_data;
         election.apporved += 1;
+        if election.apporved > 10 {
+            election.is_happening = true;
+        }
         voter.supported = false;
         voter.voted= false;
         Ok(())
@@ -32,35 +35,29 @@ pub mod create_profile {
     pub fn support_candidate(ctx: Context<SupportCandidate>) -> Result<()> {
         let voter = &mut ctx.accounts.voter_data;
         let candidate = &mut ctx.accounts.candidate_data;
-        if !voter.supported {
-            candidate.support += 1;
-            voter.supported = true;
-        };
-        if candidate.support > 10{
-            candidate.electable = true;
-        }
+
+        require!(voter.supported,ElectionError::DoubleSuport);
+        require!(candidate.support > 10,ElectionError::CandidateAlreadyElectable);
+
+        candidate.support += 1;
+        voter.supported = true;
+        candidate.electable = true;
+        
         Ok(())
     }
     
-    pub fn vote(ctx: Context<Vote>) -> Result<()> {
+    pub fn vote(ctx: Context<Vote>,votes:u8) -> Result<()> {
         let voter: &mut Account<VoterData> = &mut ctx.accounts.voter_data;
         let candidate: &mut Account<CandidateData> = &mut ctx.accounts.candidate_data;        
         let election: &mut Account<ElectionData> = &mut ctx.accounts.election_data;
 
-        if election.is_happening {
-            if candidate.electable {
-                if !voter.voted {
-                    candidate.votes += 1;
-                    voter.voted = true;
-                }else{
-                    //votererror
-                }
-            }else{
-                // candidate error 
-            }    
-        }else{
-            // election error
-        }
+        require!(election.is_happening,ElectionError::ElectionNotAvailable);
+        require!(candidate.electable,ElectionError::CandidateNotElectable);
+        require!(!voter.voted,ElectionError::DoubleVoting);
+
+        candidate.votes += 1;
+        voter.voted = true;
+              
         Ok(())
     }
 }
@@ -92,6 +89,7 @@ pub struct CreateCandiadte<'info> {
         seeds=[
             b"candidate",
             signer.key().as_ref(),
+            election_data.key().as_ref()
         ],
         bump
     )]
@@ -109,6 +107,8 @@ pub struct CreateVoter<'info> {
         seeds=[
             b"voter",
             signer.key().as_ref(),
+            election_data.key().as_ref()
+ 
         ],
         bump,
         space= 32 + 8 + 2
@@ -176,10 +176,6 @@ pub struct VoterData {
 
 #[error_code]
 pub enum ElectionError {
-    WinnerCountNotAllowed,
-    ApplicationIsClosed,
-    WrongPublicKey,
-    PrivilegeNotAllowed,
-    ElectionIsClosed,
-    NotAtVotingStage
+    ElectionNotAvailable,
+    DoubleVoting,
 }
